@@ -28,24 +28,6 @@ export default function NewDeal() {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     // console.log(game);
-    console.log(`${game.date}T${game.hour}:00.000`);
-    const date = new Date(`${game.date}T${game.hour}:00.000-03:00`).toISOString();
-    // register game in database
-    fetch("/api/game", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        team1: game.team1,
-        team2: game.team2,
-        date,
-      }),
-    }).then((res) => {
-      if (res.ok) {
-        alert("Jogo cadastrado com sucesso!");
-      }
-    });
   }
 
   if (status === "loading" || !game) {
