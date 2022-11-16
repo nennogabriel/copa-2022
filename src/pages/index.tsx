@@ -82,18 +82,22 @@ export default function Home() {
       </header>
       <main className="container py-10">
         {/* render games  */}
-        {!!games &&
-          games.map((game) => (
-            <div key={game.id} className="flex justify-between py-2">
-              <p>
-                {game.team1} x {game.team2}
-              </p>
-              <p>{new Date(game.date).toLocaleString()}</p>
-              <Link className="btn" href={`/game/${game.id}`}>
-                detalhes
-              </Link>
-            </div>
-          ))}
+
+        {!!games && games.length > 0 && (
+          <>
+            {games.map((game) => (
+              <div key={game.id} className="flex justify-between py-2">
+                <p>
+                  {game.team1} x {game.team2}
+                </p>
+                <p>{new Date(game.date).toLocaleString()}</p>
+                <Link className="btn" href={`/game/${game.id}`}>
+                  detalhes
+                </Link>
+              </div>
+            ))}
+          </>
+        )}
       </main>
       <footer className="container">
         <ul className="flex items-center gap-4">
