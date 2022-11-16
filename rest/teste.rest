@@ -1,0 +1,16 @@
+@host= http://localhost:3000/api
+
+
+###
+GET {{host}}/game/all
+
+
+###
+POST {{host}}/game/
+Content-Type: application/json
+
+{
+    "team1": "bra",
+    "team2": "arg",
+    "date": "2018-06-15"
+}

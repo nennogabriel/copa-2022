@@ -1,0 +1,7 @@
+{
+  "cSpell.words": [
+    "NEXTAUTH"
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}
