@@ -232,7 +232,7 @@ export default function NewDeal() {
                 <button
                   className="btn bg-gray-700"
                   onClick={() => {
-                    acceptRequest(request);
+                    // acceptRequest(request);
                   }}
                 >
                   Rejeitar
