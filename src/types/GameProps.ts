@@ -13,13 +13,7 @@ export type GameProps = {
       scoreTeam2: string;
       email: string;
       amount: number;
-    }>;
-    requests: Array<{
-      id: string;
-      scoreTeam1: string;
-      scoreTeam2: string;
-      email: string;
-      amount: number;
+      confirmed: boolean;
     }>;
   };
 };

@@ -30,6 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
+
   if (!game) return res.status(404).json({ error: "Game not found" });
 
   if (req.method === "GET") {
@@ -41,7 +42,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     // registering a bet request
     // update a game instance
     const { scoreTeam1, scoreTeam2, email, amount } = req.body;
-    console.log(req.body);
     if ([scoreTeam1, scoreTeam2, email, amount].includes(undefined))
       return res.status(400).json({ error: "Missing data" });
     // refuse requests after the game starts
@@ -54,18 +54,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         q.Update(q.Ref(q.Collection("games"), id), {
           data: {
             ...game.data,
-            requests: [
-              ...game.data.requests,
+            guesses: [
+              ...game.data.guesses,
               {
+                id: req.body.id,
                 scoreTeam1,
                 scoreTeam2,
                 email,
                 amount,
+                confirmed: false,
               },
             ],
           },
         })
       );
+      return res.status(200).json(response);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
+    }
+  }
+
+  if (req.method === "PATCH") {
+    // update a game instance
+    const data = req.body;
+    try {
+      const response: GameProps = await faunaClient.query(
+        q.Update(q.Ref(q.Collection("games"), id), {
+          data,
+        })
+      );
+      console.log(response);
       return res.status(200).json(response);
     } catch (error: any) {
       return res.status(400).json({ error: error.message });

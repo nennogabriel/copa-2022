@@ -28,7 +28,6 @@ export default function NewDeal() {
       team2: "",
       done: false,
       guesses: [],
-      requests: [],
       scoreTeam1: 0,
       scoreTeam2: 0,
       time: 0,
@@ -55,8 +54,7 @@ export default function NewDeal() {
           ...data,
           data: {
             ...data.data,
-            guesses: data.data.gusses || [],
-            requests: data.data.requests || [],
+            guesses: data.data.guesses || [],
           },
         });
       });
@@ -94,6 +92,71 @@ export default function NewDeal() {
       });
   }
 
+  function rejectRequest(betId: string) {
+    const findRequest = game.data.guesses.find((request) => request.id === betId);
+    if (!findRequest) return;
+    if (findRequest.confirmed) return;
+
+    const guessesUpdated = game.data.guesses.filter((request) => request.id !== betId);
+
+    const gameUpdated = {
+      ...game,
+      data: {
+        ...game.data,
+        guesses: guessesUpdated || "",
+      },
+    };
+
+    fetch(`/api/game/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(gameUpdated.data),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setGame(gameUpdated);
+      });
+  }
+
+  function acceptRequest(betId: string) {
+    const findRequest = game.data.guesses.find((request) => request.id === betId);
+    if (!findRequest) return;
+    if (findRequest.confirmed) return;
+
+    const guessesUpdated = game.data.guesses.map((request) => {
+      if (request.id === betId) {
+        return {
+          ...request,
+          confirmed: true,
+        };
+      }
+      return request;
+    });
+
+    const gameUpdated = {
+      ...game,
+      data: {
+        ...game.data,
+        guesses: guessesUpdated,
+      },
+    };
+
+    fetch(`/api/game/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(gameUpdated.data),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setGame(gameUpdated);
+      });
+  }
+
+  console.log(game);
   return (
     <div className="min-h-screen min-w-screen bg-yellow-300">
       <Head>
@@ -202,43 +265,55 @@ export default function NewDeal() {
         <section className="flex flex-col gap-4">
           <h2>Apostas</h2>
           <div className="flex flex-col gap-4">
-            {game.data.guesses.map((guess) => (
-              <div key={guess.email} className="flex gap-4">
-                <Gravatar className="rounded-xl" size={100} email={guess.email} />
-                <div className="flex flex-col gap-2">
-                  <p>{guess.email}</p>
-                  <p>
-                    {guess.scoreTeam1} x {guess.scoreTeam2}
-                  </p>
-                  <p>{guess.amount}</p>
+            {game.data.guesses
+              .filter((g) => g.confirmed)
+              .map((guess) => (
+                <div key={guess.email} className="flex gap-4">
+                  <Gravatar className="rounded-xl" size={100} email={guess.email} />
+                  <div className="flex flex-col gap-2">
+                    <p>{guess.email}</p>
+                    <p>
+                      {guess.scoreTeam1} x {guess.scoreTeam2}
+                    </p>
+                    <p>{guess.amount}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </section>
         <section className="flex flex-col gap-4 bg-gray-300">
           <h2>Requisições de Apostas</h2>
           <div className="flex flex-col gap-4">
-            {game.data.requests.map((request) => (
-              <div key={request.email} className="flex gap-4">
-                <Gravatar className="rounded-xl" size={100} email={request.email} />
-                <div className="flex flex-col gap-2">
-                  <p>{request.email}</p>
-                  <p>
-                    {game.data.team1} {request.scoreTeam1} x {request.scoreTeam2} {game.data.team2}
-                  </p>
-                  <p>R$ {request.amount.toFixed(2)}</p>
+            {game.data.guesses
+              .filter((g) => !g.confirmed)
+              .map((request) => (
+                <div key={request.id} className="flex gap-4">
+                  <Gravatar className="rounded-xl" size={100} email={request.email} />
+                  <div className="flex flex-col gap-2">
+                    <p>{request.email}</p>
+                    <p>
+                      {game.data.team1} {request.scoreTeam1} x {request.scoreTeam2} {game.data.team2}
+                    </p>
+                    <p>R$ {request.amount.toFixed(2)}</p>
+                  </div>
+                  <button
+                    className="btn bg-gray-700"
+                    onClick={() => {
+                      rejectRequest(request.id);
+                    }}
+                  >
+                    Rejeitar
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      acceptRequest(request.id);
+                    }}
+                  >
+                    Aceitar
+                  </button>
                 </div>
-                <button
-                  className="btn bg-gray-700"
-                  onClick={() => {
-                    // acceptRequest(request);
-                  }}
-                >
-                  Rejeitar
-                </button>
-              </div>
-            ))}
+              ))}
           </div>
         </section>
       </main>
