@@ -166,7 +166,7 @@ export default function NewDeal() {
       </Head>
 
       <main className="container">
-        <div className="flex items-center justify-between gap-4 ">
+        <div className="flex items-center justify-between flex-wrap gap-4 ">
           <Link href="/">
             <Image
               className="rounded-xl"
@@ -224,7 +224,7 @@ export default function NewDeal() {
           <section className="flex flex-col">
             <h2>Fazer Aposta</h2>
             <form onSubmit={handleSubmit}>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 <div className="flex flex-col gap-2">
                   <label htmlFor="scoreTeam1">{game.data.team1}</label>
                   <input
@@ -287,7 +287,7 @@ export default function NewDeal() {
             {game.data.guesses
               .filter((g) => !g.confirmed)
               .map((request) => (
-                <div key={request.id} className="flex gap-4">
+                <div key={request.id} className="flex flex-wrap gap-4 py-2">
                   <Gravatar className="rounded-xl" size={100} email={request.email} />
                   <div className="flex flex-col gap-2">
                     <p>{request.email}</p>
@@ -317,7 +317,7 @@ export default function NewDeal() {
           </div>
         </section>
       </main>
-      <footer className="container"></footer>
+      <footer className="container py-8"></footer>
     </div>
   );
 }
