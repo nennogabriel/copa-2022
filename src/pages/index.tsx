@@ -90,7 +90,17 @@ export default function Home() {
                 <p>
                   {game.team1} x {game.team2}
                 </p>
-                <p>{new Date(game.date).toLocaleString()}</p>
+                <p>
+                  {new Date(game.date).toLocaleString("pt-BR", {
+                    dateStyle: "full",
+                  })}
+                  {" às "}
+                  {new Date(game.date).toLocaleString("pt-BR", {
+                    hour12: false,
+                    timeStyle: "short",
+                  })}
+                </p>
+
                 <Link className="btn" href={`/game/${game.id}`}>
                   detalhes
                 </Link>
