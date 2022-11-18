@@ -101,7 +101,7 @@ export default function NewDeal() {
               name="team1"
               id="team1"
               value={game.team1}
-              onChange={(e) => setGame({ ...game, team1: e.target.value.toUpperCase().slice(0, 3) })}
+              onChange={(e) => setGame({ ...game, team1: e.target.value.toUpperCase() })}
             />
             <label htmlFor="team2">Time 2</label>
             <input
@@ -109,7 +109,7 @@ export default function NewDeal() {
               name="team2"
               id="team2"
               value={game.team2}
-              onChange={(e) => setGame({ ...game, team2: e.target.value.toUpperCase().slice(0, 3) })}
+              onChange={(e) => setGame({ ...game, team2: e.target.value.toUpperCase() })}
             />
             <label htmlFor="date">Data</label>
             <input
