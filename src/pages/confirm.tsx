@@ -31,8 +31,15 @@ export default function Home() {
           <h1 className="text-3xl">Falta pouco!</h1>
           <p>Envie o pix para a conta abaixo: </p>
 
+          <Image src="/img/pix.jpeg" alt="pix" width="300" height="300" />
+          <p>ou</p>
+          <p>para a chave 70ddcae6-3337-4367-9df4-92173b1f8aa3</p>
+
           <p>
-            e o comprovante para o whatsapp: <a href="https://wa.me/5511966666666">11966666666</a>
+            e o comprovante para o whatsapp:{" "}
+            <a className="text-blue-800 underline" href="https://wa.me/4840420001">
+              48 4042-0001
+            </a>
           </p>
         </div>
       </main>

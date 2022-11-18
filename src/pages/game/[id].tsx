@@ -2,17 +2,23 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Gravatar from "react-gravatar";
 import { useRouter } from "next/router";
 import { GameProps } from "../../types/GameProps";
 import shortUUID from "short-uuid";
+import { admins } from "../../util/admins";
 
 interface BetProps {
   id: string;
   scoreTeam1: number;
   scoreTeam2: number;
   amount: number;
+}
+
+interface ResultProps {
+  scoreTeam1: number;
+  scoreTeam2: number;
 }
 
 export default function NewDeal() {
@@ -33,12 +39,57 @@ export default function NewDeal() {
       time: 0,
     },
   });
+
   const [bet, setBet] = useState<BetProps>({
     id: shortUUID.generate(),
     scoreTeam1: 0,
     scoreTeam2: 0,
     amount: 0,
   });
+
+  const [result, setResult] = useState<ResultProps>({
+    scoreTeam1: 0,
+    scoreTeam2: 0,
+  });
+
+  const resultBets = useMemo(() => {
+    if (!game.data.done) return {};
+    if (game.data.scoreTeam1 === null) return {};
+    if (game.data.scoreTeam2 === null) return {};
+
+    const sumBets = game.data.guesses.reduce((acc, guess) => {
+      if (guess.confirmed) {
+        return acc + guess.amount;
+      }
+      return acc;
+    }, 0);
+
+    const confirmedBets = game.data.guesses.filter((guess) => guess.confirmed);
+    const isTeam1Winner = game.data.scoreTeam1 > game.data.scoreTeam2;
+
+    const preciseWinners = confirmedBets.filter((guess) => {
+      const scoreTeam1 = Number(guess.scoreTeam1);
+      const scoreTeam2 = Number(guess.scoreTeam2);
+      return scoreTeam1 === game.data.scoreTeam1 && scoreTeam2 === game.data.scoreTeam2;
+    });
+
+    const sumPreciseWinners = preciseWinners.reduce((acc, guess) => {
+      return acc + guess.amount;
+    }, 0);
+
+    const sideWinners = confirmedBets.filter((guess) => {
+      const scoreTeam1 = Number(guess.scoreTeam1);
+      const scoreTeam2 = Number(guess.scoreTeam2);
+      const isBetTeam1Winner = scoreTeam1 > scoreTeam2;
+      return isBetTeam1Winner === isTeam1Winner;
+    });
+
+    const sumSideWinners = sideWinners.reduce((acc, guess) => {
+      return acc + guess.amount;
+    }, 0);
+
+    return { sumBets, preciseWinners, sideWinners, sumPreciseWinners, sumSideWinners };
+  }, [game]);
 
   useEffect(() => {
     if (!id) return;
@@ -76,6 +127,12 @@ export default function NewDeal() {
       return;
     }
 
+    if (bet.scoreTeam1 === bet.scoreTeam2) {
+      if (!confirm("Você tem certeza que quer apostar em empate?")) {
+        return;
+      }
+    }
+
     fetch(`/api/game/${id}`, {
       method: "PUT",
       headers: {
@@ -89,6 +146,26 @@ export default function NewDeal() {
       .then((res) => res.json())
       .then((data) => {
         router.push(`/confirm`);
+      });
+  }
+
+  function handleSubmitResult(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!session) return;
+
+    fetch(`/api/game/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...result,
+        done: true,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        alert("Resultado atualizado");
       });
   }
 
@@ -156,7 +233,6 @@ export default function NewDeal() {
       });
   }
 
-  console.log(game);
   return (
     <div className="min-h-screen min-w-screen bg-yellow-300">
       <Head>
@@ -220,8 +296,62 @@ export default function NewDeal() {
             </p>
           </div>
         </section>
+        {game.data.done && (
+          <>
+            {resultBets.preciseWinners?.length === 0 && resultBets.sideWinners?.length === 0 ? (
+              <div className="flex flex-col gap-4">
+                <h1 className="text-3xl">Ninguém acertou o resultado</h1>
+              </div>
+            ) : (
+              <section className="flex flex-col gap-4">
+                <div className="py-4">
+                  <p className="text-2xl">Total do bolão: R$ {resultBets.sumBets?.toFixed(2)}</p>
+                  {resultBets.preciseWinners!.length > 0 && (
+                    <>
+                      <p className="text-2xl">Acertaram na mosca</p>
+                      <ul className="flex flex-col gap-4">
+                        {resultBets.preciseWinners!.map((guess) => {
+                          if (guess.confirmed) {
+                            return (
+                              <li key={guess.id}>
+                                <p>{guess.email}</p>
+                                <p>
+                                  R$ {((guess.amount / resultBets.sumPreciseWinners!) * resultBets.sumBets!).toFixed(2)}
+                                </p>
+                              </li>
+                            );
+                          }
+                        })}
+                      </ul>
+                    </>
+                  )}
+                  {resultBets.preciseWinners!.length === 0 && resultBets.sideWinners!.length > 0 && (
+                    <>
+                      <p className="text-2xl">Acertaram o vencedor</p>
+                      <ul className="flex flex-col gap-4">
+                        {resultBets.sideWinners!.map((guess) => {
+                          if (guess.confirmed) {
+                            return (
+                              <li key={guess.id}>
+                                <p>{guess.email}</p>
+                                <p>
+                                  R$ {((guess.amount / resultBets.sumSideWinners!) * resultBets.sumBets!).toFixed(2)}
+                                </p>
+                              </li>
+                            );
+                          }
+                        })}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+
         {!game.data.done && (
-          <section className="flex flex-col">
+          <section className="flex flex-col mb-4">
             <h2>Fazer Aposta</h2>
             <form onSubmit={handleSubmit}>
               <div className="flex flex-wrap gap-4">
@@ -262,13 +392,51 @@ export default function NewDeal() {
             </form>
           </section>
         )}
+        {admins.includes(session?.user?.email!) && (
+          <section className="flex flex-col gap-4 bg-gray-300 p-4">
+            <h2>Requisições de Apostas</h2>
+            <div className="flex flex-col gap-4">
+              {game.data.guesses
+                .filter((g) => !g.confirmed)
+                .map((request) => (
+                  <div key={request.id} className="flex flex-wrap gap-4 py-2">
+                    <Gravatar className="rounded-xl" size={100} email={request.email} />
+                    <div className="flex flex-col gap-2">
+                      <p>{request.email}</p>
+                      <p>
+                        {game.data.team1} {request.scoreTeam1} x {request.scoreTeam2} {game.data.team2}
+                      </p>
+                      <p>R$ {request.amount.toFixed(2)}</p>
+                    </div>
+                    <button
+                      className="btn bg-gray-700"
+                      onClick={() => {
+                        rejectRequest(request.id);
+                      }}
+                    >
+                      Rejeitar
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => {
+                        acceptRequest(request.id);
+                      }}
+                    >
+                      Aceitar
+                    </button>
+                  </div>
+                ))}
+            </div>
+          </section>
+        )}
+
         <section className="flex flex-col gap-4">
           <h2>Apostas</h2>
           <div className="flex flex-col gap-4">
             {game.data.guesses
               .filter((g) => g.confirmed)
               .map((guess) => (
-                <div key={guess.email} className="flex gap-4">
+                <div key={guess.id} className="flex gap-4">
                   <Gravatar className="rounded-xl" size={100} email={guess.email} />
                   <div className="flex flex-col gap-2">
                     <p>{guess.email}</p>
@@ -281,41 +449,37 @@ export default function NewDeal() {
               ))}
           </div>
         </section>
-        <section className="flex flex-col gap-4 bg-gray-300">
-          <h2>Requisições de Apostas</h2>
-          <div className="flex flex-col gap-4">
-            {game.data.guesses
-              .filter((g) => !g.confirmed)
-              .map((request) => (
-                <div key={request.id} className="flex flex-wrap gap-4 py-2">
-                  <Gravatar className="rounded-xl" size={100} email={request.email} />
-                  <div className="flex flex-col gap-2">
-                    <p>{request.email}</p>
-                    <p>
-                      {game.data.team1} {request.scoreTeam1} x {request.scoreTeam2} {game.data.team2}
-                    </p>
-                    <p>R$ {request.amount.toFixed(2)}</p>
-                  </div>
-                  <button
-                    className="btn bg-gray-700"
-                    onClick={() => {
-                      rejectRequest(request.id);
-                    }}
-                  >
-                    Rejeitar
-                  </button>
-                  <button
-                    className="btn"
-                    onClick={() => {
-                      acceptRequest(request.id);
-                    }}
-                  >
-                    Aceitar
-                  </button>
-                </div>
-              ))}
-          </div>
-        </section>
+
+        {!game.data.done && game.data.time < new Date().getTime() && (
+          <section className="py-4">
+            <h2>Resultado (Placar)</h2>
+            <div className="flex flex-col gap-4">
+              <form className="py-8" onSubmit={handleSubmitResult}>
+                <label htmlFor="scoreTeam1">{game.data.team1}</label>
+                <input
+                  className="w-20 px-2 mx-4"
+                  type="number"
+                  name="scoreTeam1"
+                  id="scoreTeam1"
+                  value={result.scoreTeam1}
+                  onChange={(e) => setResult({ ...result, scoreTeam1: Math.abs(Number(e.target.value)) })}
+                />
+                <label htmlFor="scoreTeam2">{game.data.team2}</label>
+                <input
+                  className="w-20 px-2 mx-4"
+                  type="number"
+                  name="scoreTeam2"
+                  id="scoreTeam2"
+                  value={result.scoreTeam2}
+                  onChange={(e) => setResult({ ...result, scoreTeam2: Math.abs(Number(e.target.value)) })}
+                />
+                <button className="btn mt-4" type="submit">
+                  Enviar Resultado
+                </button>
+              </form>
+            </div>
+          </section>
+        )}
       </main>
       <footer className="container py-8"></footer>
     </div>

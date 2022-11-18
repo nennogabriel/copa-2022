@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Gravatar from "react-gravatar";
+import { admins } from "../util/admins";
 // import { GamesList } from "../components/GamesList";
 
 interface GameProps {
@@ -109,19 +110,16 @@ export default function Home() {
           </>
         )}
       </main>
-      <footer className="container">
-        <ul className="flex items-center gap-4">
-          <li>
-            <Link className="btn" href="/new-deal">
-              Apostas
-            </Link>
-          </li>
-          <li>
-            <Link className="btn" href="/">
-              aprovações
-            </Link>
-          </li>
-        </ul>
+      <footer className="container py-8">
+        {admins.includes(session?.user?.email!) && (
+          <ul className="flex items-center gap-4">
+            <li>
+              <Link className="btn" href="/new-deal">
+                Registrar Partida
+              </Link>
+            </li>
+          </ul>
+        )}
       </footer>
     </div>
   );
