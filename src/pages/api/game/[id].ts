@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
 import faunadb, { query as q } from "faunadb";
 import { GameProps } from "../../../types/GameProps";
+import { admins } from "../../../util/admins";
 
 type ErrorProps = {
   error: string;
@@ -13,8 +14,6 @@ interface ResponseProps {
     ref: { id: string };
   }>;
 }
-
-const admins = ["pedro@seal.works"];
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<GameProps | ErrorProps>) {
   const session = await getSession({ req });
@@ -76,6 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
   if (req.method === "PATCH") {
     // update a game instance
+    if (!admins.includes(session.user?.email!)) return res.status(401).json({ error: "Unauthorized" });
     const data = req.body;
     try {
       const response: GameProps = await faunaClient.query(
@@ -92,11 +92,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
   if (req.method === "DELETE") {
     // delete a game instance
-    try {
-      const response: GameProps = await faunaClient.query(q.Delete(q.Ref(q.Collection("games"), id)));
-      return res.status(200).json(response);
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+    if (admins.includes(session.user?.email!)) {
+      try {
+        const response: GameProps = await faunaClient.query(q.Delete(q.Ref(q.Collection("games"), id)));
+        return res.status(200).json(response);
+      } catch (error: any) {
+        return res.status(400).json({ error: error.message });
+      }
     }
   }
 

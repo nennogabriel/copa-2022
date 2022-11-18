@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
 import faunadb, { query as q } from "faunadb";
 import { GameProps } from "../../../types/GameProps";
+import { admins } from "../../../util/admins";
 
 type ErrorProps = {
   error: string;
@@ -14,12 +15,12 @@ interface ResponseProps {
   }>;
 }
 
-const admins = ["pedro@seal.works"];
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse<GameProps | ErrorProps>) {
   const session = await getSession({ req });
 
-  // if (!session) return res.status(401).json({ error: "Unauthorized" });
+  if (!session) return res.status(401).json({ error: "Unauthorized" });
+  if (!admins.includes(session.user?.email!)) return res.status(401).json({ error: "Unauthorized" });
+
   const faunaClient = new faunadb.Client({ secret: process.env.FAUNADB_KEY! });
 
   if (req.method === "POST") {
@@ -34,8 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             team1: data.team1.trim().toUpperCase(),
             team2: data.team2.trim().toUpperCase(),
             time,
-            requests: [],
-            deals: [],
+            guesses: [],
           },
         })
       );
